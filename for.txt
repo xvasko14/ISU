@@ -1,0 +1,37 @@
+;for (int i = 0; i < pocet; i++) {
+	;     eax = cisla[i];
+	;     if (eax >= 40 && eax <= 400) WriteInt32();
+	; }
+	;
+	; BONUS 1: Vypis cisel v intervalech <40, 400> a <800, 1000>
+	; tj. podminka if ((eax >= 40 && eax <= 400) || (eax >= 800 && eax <= 1000))
+	; BONUS 2: Vypis LICHYCH cisel v intervalech <40, 400> a <800, 1000>
+	; tj. podminka if (((eax >= 40 && eax <= 400) || (eax >= 800 && eax <= 1000)) && (eax & 1))
+	
+global start
+%include 'rw32.inc'
+
+section .data
+cisla dd 40,400,39,401,800
+pocet dd 5
+
+section .text
+
+main:
+xor eax,eax
+mov ecx,0
+for:
+  cmp ecx,dword [pocet]
+  jge konec
+  mov eax,[cisla + 4*ecx] ;
+  if:
+  cmp eax,40
+  jl endif
+  cmp eax,400
+  jg endif
+  call WriteInt32
+  call WriteNewLine
+  endif:
+  inc ecx
+  jmp for
+konec:

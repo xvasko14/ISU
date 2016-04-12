@@ -1,0 +1,34 @@
+global start
+%include 'rw32.inc'
+
+section .data
+x resd 1
+hviezdicka db "* ",0
+
+section .text
+
+main:
+
+call ReadUInt8
+mov ecx, 10
+mov ebx, ecx
+
+radky:
+ push ecx
+ mov al, 32
+mezery:
+ call WriteChar
+ loop mezery
+ pop ecx
+
+ push ecx
+ sub ecx, ebx  ; 10-10=0 | 4-10=-6
+ dec ecx       ; -1      | -7
+ neg ecx       ; 1       | 7
+ mov al, '*'
+hvezdicky:
+ call WriteChar
+ loop hvezdicky
+ call WriteNewLine
+ pop ecx
+loop radky
