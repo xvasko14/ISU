@@ -1,0 +1,88 @@
+%include "rw32-2015.inc"
+
+
+section .data
+sMessage db "Hello World!",EOL,0	; pro výpis musí být oetizec ukoneen '0', EOL je odoádkování
+tMessage db "xxxxxxxxxxxx",EOL,0	; "jednoduchá" blokace místa
+pr1text resb 100			; sofistikovanijší oešení
+cisla db 10,20,30,40			; pole eísel
+mocniny resw 4				; pole na mocniny eísel
+
+
+section .text
+main:
+
+
+; 0) poekopíruj oetizec a vypiš jej na konzoli
+
+mov esi, sMessage		; source index - ukazatel na první znak v oetizci
+mov edi, tMessage		; destination index - cíl kopírování
+cld				; nastavení smiru kopírování
+mov ecx, 8			; nastavení poetu opakování pro REP - count register
+rep movsb			; viz poednášky
+				; poekopíruje se jen 8 znaku, a? vidíme, že došlo k poepisu
+mov esi, tMessage		; zpráva, kterou vypíši (musí být ukoneeno nulou)
+call WriteString		; zavolám výpis na konzoli z knihovny rw32
+
+
+
+
+; 1) spoeítej výskyty 'e'
+
+mov ebx, 99			; maximální poeet naetených znaku (viz hlavieka v rw32)
+mov edi, pr1text		; kam bude funkce ukládat poeetený text (ukazatel na zaeátek vyhrazeného místa)
+call ReadString			; do EAX nahraje skuteeni naetený poeet znaku
+
+mov ecx, eax			; projdu jen poes skuteeni naetené znaky
+mov esi, edi			; naetený text ze vstupu dám jako zdroj
+mov bl, 0			; vynuluji eítae
+cld
+pr1count:
+lodsb				; nahraji znak do AL (ESI se inkrementuje)
+cmp al, 'e'			; porovnání
+jne pr1next
+inc bl
+pr1next:
+loop pr1count			; dokud ECX>0, skoe
+
+mov al, bl			; výsledek dám k vypsání
+call WriteInt8
+call WriteNewLine		; write new line
+
+
+
+
+; 2) mocnina 2
+
+mov esi, cisla			; ukazatel na zaeátek zdrojových dat
+mov ecx, 4			; poeet kroku
+mov edi, mocniny		; ukazatel na cíl
+cld
+pr2cykl:
+lodsb				; naetení znaku z aktuální pozice ESI do AL (ESI se pak inkrementuje)
+mul al				; AL * AL = AX
+stosw				; uložení znaku z AX do EDI (EDI se pak inkrementuje)
+call WriteInt16			; vypsání 16bitového eísla (z AX)
+call WriteNewLine
+loop pr2cykl
+
+
+
+
+; 3) výskyt znaku 'o' zleva
+
+mov edi, pr1text		; z nijakého duvodu potoebuje EDI ukazatel na skuteený oetizec (i když s ním pracujeme jako s eíslem)
+mov ebx, 99			; maximum naetených znaku
+call ReadString
+mov esi, edi			; naetený oetizec jako source index
+mov ecx, eax			; poeet naetených znaku
+mov al, 'o'			; naetu porovnávaný znak
+cld
+repne scasb			; dokud se neshoduje, inkrementuji ESI i EDI
+sub edi, pr1text		; odeetu startovní pozici ukazatele od koneené
+mov eax, edi			; eíselnou pozici pošlu na výpis
+call WriteInt32
+
+
+
+ret
