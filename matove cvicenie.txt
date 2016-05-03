@@ -1,0 +1,111 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ISU - cviceni 12                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+global start
+%include 'rw32.inc'
+
+section .data
+
+x dd 2.0
+y dd 3.0
+z dd 4.0
+
+r1 dd 5.0
+v1 dd 10.0
+
+r2 dd 11.0
+v2 dd 3.0
+
+trojka dd 3.0
+tristo dd 300.0
+
+
+section .text
+
+main:
+
+	; Vypocti 2 + (3 / 4) = 2.75
+	; Vysledek je v ST0
+	finit
+	push dword [z]
+	push dword [y]
+	push dword [x]
+	call funkce1
+	add esp, 12
+	call WriteDouble
+	call WriteNewLine
+
+	; Kuzel: polomer 5, vyska 10  => objem 261.799
+	finit
+	push dword [v1]
+	push dword [r1]
+	call objemKuzele
+	add esp, 8
+
+	fld dword[tristo]
+	fcomip st1
+	jae writ
+
+	call WriteDouble
+	call WriteNewLine
+
+	; Kuzel: polomer 11, vyska 3  => objem 380.132
+writ:
+	finit
+	push dword [v2]
+	push dword [r2]
+	call objemKuzele
+	add esp, 8
+	call WriteDouble
+	call WriteNewLine
+
+	ret
+
+; Vypocte  x + (y / z)
+;
+;double funkce1(float x, float y, float z) {
+;	return x - y / z;
+;}
+funkce1:
+	push ebp
+	mov ebp, esp
+	fld dword[ebp+12]
+	fld dword[ebp+16]
+	fdivp st1
+	fld dword[ebp+8]
+	faddp st1
+
+	; zde doplnte vypocet
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+; Vypocte objem kuzele
+;
+;double objemKuzele(int polomer, int vyska) {
+;	return 1.0/3.0*PI*polomer*polomer*vyska;
+;}
+objemKuzele:
+	push ebp
+	mov ebp, esp
+	fld1
+	fld dword[y]
+	fdivp st1 ;1/3
+	;;;
+	fld dword[ebp+8];r^2
+	fmul st0
+	fmulp st1
+	;;;
+	fldpi
+	fmulp st1
+	fld dword[ebp+12]
+	fmulp st1
+
+	; zde doplnte vypocet
+
+	mov esp, ebp
+	pop ebp
+	ret
+
