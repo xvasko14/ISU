@@ -1,0 +1,143 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ISU - test 3                      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+global main
+extern ExitProcess
+extern printf
+%include "rw32.inc"
+
+section .data
+
+; 1) definujte pole peti 32bitovych cisel typu float - 1b
+pole dd 2.0, 4.5, 8.25, 20.0, 6.5
+format db "%f",10,0
+i dd 5.5
+j dd 10.10
+r dd 4.0
+zero dd 0
+
+x resd 1
+y resq 1
+
+section .text
+
+main:
+	call priklad2a
+	call priklad2b
+	call priklad2c
+	call priklad3
+	call priklad4b
+	jmp konec
+
+priklad2a:
+; 2a) prepiste tento kod jako matematicky vyraz (napr. "2*i+j") - 2b
+	;finit
+	;fld dword [i]
+	;fld dword [pole];2
+	;fmulp st1
+	;fld dword [j]
+	;faddp st1
+	;fst dword[x]
+	;ret
+
+; 2a) prepiste tento kod jako matematicky vyraz (napr. "(j + 1 + (pi + j)) * i") - 2b
+	finit
+	fld dword [i] ;i st0 ,st1 ,st2, st3
+	fld dword [j] ;j  = st0, st1, st2
+	fld1 ; st0, st1 = 1
+	fldpi; st0 = pi
+	fadd st2 ;st0 + st2= pi + j
+	fxch st2 ;st0 ch st2 , st2=pi+j
+	fadd ;st0+st1 = j + 1
+	fadd ;st0+st2 = j + 1 +( pi+j)
+	fmul ;st0*st3 = (j + 1 + (pi + j)) * i
+	fst dword[x]
+	ret
+
+priklad2b:
+; 2b) vypiste vysledek pomoci WriteFloat z knihovny rw32.inc (pozor na to, kde ocekava hodnotu) - 1b
+	mov eax,dword[x]
+	call WriteFloat
+	call WriteNewLine
+	ret
+
+priklad2c:
+; 2c - bonus) vypiste vysledek pomoci printf(format, num) - 1b bonus
+; pozor: %f pracuje s double, nikoliv float
+	push dword[x]
+	push format
+	call printf ;0?
+	add esp,8
+	ret
+
+priklad3:
+; 3) Uvazujte vase pole (viz priklad 1) jako vektor x. Spocitejte jeho euklidovskou normu - 4b
+; Euklidovska norma = odmocnina souctu druhych mocnin, tj. ||x|| = sqrt(x1^2 + x2^2 + ... + xn^2)
+; (V podstate jde o n-rozmernou Pythagorovu vetu.)
+; Vysledek ponechte v st0 a vypiste pomoci WriteDouble
+; Kod v C:
+
+;st0 = st0 + (pole[i]*pole[i])
+;    for (int i = 0; i < 5; i++) {
+;        st0 += pole[i] * pole[i];
+;    }
+;	 st0 = sqrt(st0)
+; Hodnoceni:
+;    - cyklus for = 1b
+;    - vypocet = 3b
+
+	xor eax,eax
+	fld dword [zero] 		;st0 st1 st2
+	;pole 2 4.5 8.25 20 6.5 = 4  24.25 92.3125 492.3125 534.5625
+	for:
+		cmp eax,5
+		jge endfor
+		fld dword[pole+eax*4] 	;st0 st1
+		fld dword[pole+eax*4] 	;st0
+		fmulp st1				;st0*st1 = pole * pole + pop => st0 pole*pole , st1 zero
+		faddp st1				;st1+st0 +pop
+		inc eax
+		jmp for
+	endfor:
+	fsqrt ; st0 = sqrt (st0)
+	call WriteDouble
+	call WriteNewLine
+	ret
+
+priklad4a:
+; 4) napiste funkci (konvence cdecl), ktera vypocte obsah kruhu - 2b
+; Vysledek bude v st0, ostatni registry fpu budou prazdne
+; Kod v C:
+;    float kruh(float r) { return PI*r*r; }
+;
+; Hodnoceni:
+;    - konvence volani = 1b
+;    - vypocet = 1b
+	push ebp
+	mov ebp,esp
+
+	fld dword[ebp+8]
+	fmul st0
+	fldpi
+	fmulp st1
+	fst qword[y];cdecl eax
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+priklad4b:
+; 4b) zavolejte vytvorenou funkci pro obsah kruhu s libovolnou hodnotou a vysledek vypiste pomoci WriteDouble/printf - 1b
+	push dword[r]
+	call priklad4a
+	add esp,4
+	call WriteDouble
+	call WriteNewLine
+	; pre porovnanie cdecl eax hodnota
+	;cant pop qword to eax
+	ret
+
+konec:
+push dword 0
+call ExitProcess
