@@ -1,0 +1,77 @@
+%include "rw32-2015.inc"
+ 
+section .data
+    eq db "delka = sqrt(((sin(alpha)*x)^2) + ((cos(alpha)*y)^2))", 0, EOL
+    s_x db "x = ", 0, EOL
+    s_y db "y = ", 0, EOL
+    s_alpha db "alpha (ve stupnich) = ", 0, EOL
+    vysledek db "delka = ", 0, EOL
+    x dd 4.5
+    y dd 2.2
+    alpha dd 20
+    stoosmdesat dd 180.0
+    delka resw 1
+ 
+section .text
+ 
+main:
+zadani:
+       mov esi, eq
+       CALL WriteString
+       CALL WriteNewLine
+ 
+       xor eax, eax
+       mov esi, s_x
+       CALL WriteString
+       CALL ReadFloat
+       mov [x], eax
+ 
+       xor eax, eax
+       mov esi, s_y
+       CALL WriteString
+       CALL ReadFloat
+       mov [y], eax
+ 
+       xor eax, eax
+       mov esi, s_alpha
+       CALL WriteString
+       CALL ReadFloat
+       mov [alpha], eax
+ 
+prepocet:
+       FINIT
+       FLD dword [stoosmdesat]  ; st0 = 180
+       FLD dword [alpha]        ; st0 = alpha, st1 = 180
+       FDIV st1                 ; st0 = alpha/180, st1 = 180
+       FLDPI                    ; st0 = pi, st1 = alpha/180, st2 = 180
+       FMUL st0, st1            ; st0 = pi*(alpha/180), st1 = alpha/180
+       FST dword [alpha]
+ 
+rovnice:
+       FINIT
+       FLD dword [x]        ; st0 = x
+       FLD dword [alpha]    ; st0 = alpha, st1 = x
+       FSIN                 ; st0 = sin(alpha), st1 = x
+       FMUL ST0, ST1        ; st0 = sin(alpha)*x, st1 = x
+       FMUL ST0, ST0        ; st0 = (sin(alpha)*x)^2, st1 = x
+       FLD dword [y]        ; st0 = y, st1 = (sin(alpha)*x)^2, st2 = x
+       FLD dword [alpha]    ; st0 = alpha, st1 = y, st2 = (sin(alpha)*x)^2, st3 = x
+       FCOS                 ; st0 = cos(alpha), st1 = y, st2 = (sin(alpha)*x)^2, st3 = x
+       FMUL ST0, ST1        ; st0 = cos(alpha)*y, st1 = y, st2 = (sin(alpha)*x)^2, st3 = x
+       FMUL ST0, ST0        ; st0 = (cos(alpha)*y)^2, st1 = y, st2 = (sin(alpha)*x)^2, st3 = x
+       FXCH ST1             ; st0 = y, st1 = (cos(alpha)*y)^2, st2 = (sin(alpha)*x)^2, st3 = x
+       FXCH ST2             ; st0 = (sin(alpha)*x)^2, st1 = (cos(alpha)*y)^2, st2 = y, st3 = x
+ 
+       FADD ST1             ; st0 = ((sin(alpha)*x)^2) + ((cos(alpha)*y)^2), st1 = (cos(alpha)*y)^2, st2 = y, st3 = x
+       FSQRT                ; st0 = sqrt(((sin(alpha)*x)^2) + ((cos(alpha)*y)^2)), st1 = (cos(alpha)*y)^2, st2 = y, st3 = x
+ 
+       FST dword [delka]
+ 
+       MOV eax, [delka]
+ 
+       mov esi, vysledek
+       CALL WriteString
+       CALL WriteFloat
+ 
+call ExitProcess
+ret
